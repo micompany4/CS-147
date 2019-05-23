@@ -1,0 +1,290 @@
+// Name: barrel_shifter.v
+// Module: SHIFT32_L , SHIFT32_R, SHIFT32
+//
+// Notes: 32-bit barrel shifter
+// 
+//
+// Revision History:
+//
+// Version	Date		Who		email			note
+//------------------------------------------------------------------------------------------
+//  1.0     Sep 10, 2014	Kaushik Patra	kpatra@sjsu.edu		Initial creation
+//------------------------------------------------------------------------------------------
+`include "prj_definition.v"
+
+// 32-bit shift amount shifter
+module SHIFT32(Y,D,S, LnR);
+// output list
+output [31:0] Y;
+// input list
+input [31:0] D;
+input [31:0] S;
+input LnR;
+
+// TBD
+wire [31:0] shiftCheck;
+wire [31:0] result;
+wire signal;
+
+//the 32 bit barrel shifter
+BARREL_SHIFTER32 barrelbarrel(.Y(result), .D(D), .S(S[4:0]), .LnR(LnR));
+
+//multiplexer to choose decide if the shift amount is valid or not
+OR32_2x1 inst(.Y(shiftCheck), .A({5'b0,{S[31:5]}}), .B(32'b0));
+
+or inst3(signal, shiftCheck[29], shiftCheck[31]);	//this might not be right
+
+MUX32_2x1 out(.Y(Y), .I0(result), .I1(32'b0), .S(signal));
+
+endmodule
+
+// Shift with control L or R shift
+module BARREL_SHIFTER32(Y,D,S, LnR);
+// output list
+output [31:0] Y;
+// input list
+input [31:0] D;
+input [4:0] S;
+input LnR;
+
+// TBD
+wire [31:0] rightShift; 
+wire [31:0] leftShift;
+
+//right shifter
+SHIFT32_R righty(.Y(rightShift), .D(D), .S(S));
+//left shifter
+SHIFT32_L lefty(.Y(leftShift), .D(D), .S(S));
+
+//multiplexer to determine a right shift or left shift
+MUX32_2x1 out(.Y(Y), .I0(rightShift), .I1(leftShift), .S(LnR));
+
+endmodule
+
+// Right shifter
+module SHIFT32_R(Y,D,S);
+// output list
+output [31:0] Y;
+// input list
+input [31:0] D;
+input [4:0] S;
+
+// TBD
+wire [31:0] result1, result2, result3, result4;
+
+genvar r, t, w, x, z;
+generate
+
+//first column of the shifter
+MUX1_2x1 firstI31(.Y(result1[31]), .I0(D[31]), .I1(1'b0), .S(S[0]));
+for(r = 30; r <= 0; r = r - 1)
+begin
+	MUX1_2x1 first(.Y(result1[r]), .I0(D[r]), .I1(D[r+1]), .S(S[0]));
+end
+
+//second column of the shifter
+MUX1_2x1 secI31(.Y(result2[31]), .I0(result1[31]), .I1(1'b0), .S(S[1]));
+MUX1_2x1 secI30(.Y(result2[30]), .I0(result1[30]), .I1(1'b0), .S(S[1]));
+for(t = 29; t <= 0; t = t - 1)
+begin
+	MUX_2x1 second(.Y(result2[t]), .I0(result1[t]), .I1(result1[t+2]), .S(S[1]));
+end
+
+//third column of the shifter
+MUX1_2x1 thirdI31(.Y(result3[31]), .I0(result2[31]), .I1(1'b0), .S(S[2]));
+MUX1_2x1 thirdI30(.Y(result3[30]), .I0(result2[30]), .I1(1'b0), .S(S[2]));
+MUX1_2x1 thirdI29(.Y(result3[29]), .I0(result2[29]), .I1(1'b0), .S(S[2]));
+MUX1_2x1 thirdI28(.Y(result3[28]), .I0(result2[28]), .I1(1'b0), .S(S[2]));
+for(w = 27; w <= 0; w = w - 1)
+begin
+	MUX1_2x1 thrid(.Y(result3[w]), .I0(result2[w]), .I1(result2[w+4]), .S(S[2]));
+end
+
+//fourth column of the shifter
+MUX1_2x1 fourthI31(.Y(result4[31]), .I0(result3[31]), .I1(1'b0), .S(S[3]));
+MUX1_2x1 fourthI30(.Y(result4[30]), .I0(result3[30]), .I1(1'b0), .S(S[3]));
+MUX1_2x1 fourthI29(.Y(result4[29]), .I0(result3[29]), .I1(1'b0), .S(S[3]));
+MUX1_2x1 fourthI28(.Y(result4[28]), .I0(result3[28]), .I1(1'b0), .S(S[3]));
+MUX1_2x1 fourthI27(.Y(result4[27]), .I0(result3[27]), .I1(1'b0), .S(S[3]));
+MUX1_2x1 fourthI26(.Y(result4[26]), .I0(result3[26]), .I1(1'b0), .S(S[3]));
+MUX1_2x1 fourthI25(.Y(result4[25]), .I0(result3[25]), .I1(1'b0), .S(S[3]));
+MUX1_2x1 fourthI24(.Y(result4[24]), .I0(result3[24]), .I1(1'b0), .S(S[3]));
+for(x = 23; x <= 0; x = x - 1)
+begin
+	MUX1_2x1 fourth(.Y(result4[x]), .I0(result3[x]), .I1(result3[x+8]), .S(S[3]));
+end
+
+//fifth column of the shifter
+MUX1_2x1 fifthI31(.Y(Y[31]), .I0(result4[31]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI30(.Y(Y[30]), .I0(result4[30]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI29(.Y(Y[29]), .I0(result4[29]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI28(.Y(Y[28]), .I0(result4[28]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI27(.Y(Y[27]), .I0(result4[27]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI26(.Y(Y[26]), .I0(result4[26]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI25(.Y(Y[25]), .I0(result4[25]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI24(.Y(Y[24]), .I0(result4[24]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI23(.Y(Y[23]), .I0(result4[23]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI22(.Y(Y[22]), .I0(result4[22]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI21(.Y(Y[21]), .I0(result4[21]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI20(.Y(Y[20]), .I0(result4[20]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI19(.Y(Y[19]), .I0(result4[19]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI18(.Y(Y[18]), .I0(result4[18]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI17(.Y(Y[17]), .I0(result4[17]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI16(.Y(Y[16]), .I0(result4[16]), .I1(1'b0), .S(S[4]));
+for(z = 15; z <= 0; z = z -1)
+begin
+	MUX1_2x1 fifth(.Y(Y[z]), .I0(result4[z]), .I1(result4[z+16]), .S(S[4]));
+end
+
+//for(r = 0; r < 32; r = r + 1)
+//begin
+//	buf(Y[r], result[r]);
+//end
+
+endgenerate
+
+endmodule
+
+// Left shifter
+module SHIFT32_L(Y,D,S);
+// output list
+output [31:0] Y;
+// input list
+input [31:0] D;
+input [4:0] S;
+
+// TBD
+wire [31:0] result1, result2, result3, result4, result5;
+wire [31:0] prev;
+
+genvar j, m, n, k, p, q;
+generate
+//first column of the shifter
+MUX1_2x1 firstI0(.Y(result1[0]), .I0(D[0]), .I1(1'b0), .S(S[0]));
+for(j = 1; j < 32; j = j + 1)
+begin
+	MUX1_2x1 first(.Y(result1[j]), .I0(D[j]), .I1(D[j-1]), .S(S[0]));
+end
+
+//BUF32_1x1 inst1(prev, result);
+
+//second column of the shifter
+MUX1_2x1 secI0(.Y(result2[0]), .I0(result1[0]), .I1(1'b0), .S(S[1]));
+MUX1_2x1 secI1(.Y(result2[1]), .I0(result1[1]), .I1(1'b0), .S(S[1]));
+for(m = 2; m < 32; m = m + 1)
+begin
+	MUX1_2x1 second(.Y(result2[m]), .I0(result1[m]), .I1(result1[m-2]), .S(S[1]));
+end
+
+//BUF32_1x1 inst2(prev, result);
+
+//third colum of the shifter
+MUX1_2x1 thirdI0(.Y(result3[0]), .I0(result2[0]), .I1(1'b0), .S(S[2]));
+MUX1_2x1 thirdI1(.Y(result3[1]), .I0(result2[1]), .I1(1'b0), .S(S[2]));
+MUX1_2x1 thirdI2(.Y(result3[2]), .I0(result2[2]), .I1(1'b0), .S(S[2]));
+MUX1_2x1 thirdI3(.Y(result3[3]), .I0(result2[3]), .I1(1'b0), .S(S[2]));
+for(n = 4; n < 32; n = n + 1)
+begin
+	MUX1_2x1 third(.Y(result3[n]), .I0(result2[n]), .I1(result2[n-4]), .S(S[2]));
+end
+
+//BUF32_1x1 inst3(prev, result);
+
+//fourth column of the shifter
+MUX1_2x1 fourthI0(.Y(result4[0]), .I0(result3[0]), .I1(1'b0), .S(S[3]));
+MUX1_2x1 fourthI1(.Y(result4[1]), .I0(result3[1]), .I1(1'b0), .S(S[3]));
+MUX1_2x1 fourthI2(.Y(result4[2]), .I0(result3[2]), .I1(1'b0), .S(S[3]));
+MUX1_2x1 fourthI3(.Y(result4[3]), .I0(result3[3]), .I1(1'b0), .S(S[3]));
+MUX1_2x1 fourthI4(.Y(result4[4]), .I0(result3[4]), .I1(1'b0), .S(S[3]));
+MUX1_2x1 fourthI5(.Y(result4[5]), .I0(result3[5]), .I1(1'b0), .S(S[3]));
+MUX1_2x1 fourthI6(.Y(result4[6]), .I0(result3[6]), .I1(1'b0), .S(S[3]));
+MUX1_2x1 fourthI7(.Y(result4[7]), .I0(result3[7]), .I1(1'b0), .S(S[3]));
+for(k = 8; k < 32; k = k + 1)
+begin
+	MUX1_2x1 fourth(.Y(result4[k]), .I0(result3[k]), .I1(result3[k-8]), .S(S[3]));
+end
+
+//BUF32_1x1 inst4(prev, result);
+
+//fifth column of the shifter
+MUX1_2x1 fifthI0(.Y(Y[0]), .I0(result4[0]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI1(.Y(Y[1]), .I0(result4[1]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI2(.Y(Y[2]), .I0(result4[2]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI3(.Y(Y[3]), .I0(result4[3]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI4(.Y(Y[4]), .I0(result4[4]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI5(.Y(Y[5]), .I0(result4[5]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI6(.Y(Y[6]), .I0(result4[6]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI7(.Y(Y[7]), .I0(result4[7]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI8(.Y(Y[8]), .I0(result4[8]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI9(.Y(Y[9]), .I0(result4[9]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI10(.Y(Y[10]), .I0(result4[10]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI11(.Y(Y[11]), .I0(result4[11]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI12(.Y(Y[12]), .I0(result4[12]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI13(.Y(Y[13]), .I0(result4[13]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI14(.Y(Y[14]), .I0(result4[14]), .I1(1'b0), .S(S[4]));
+MUX1_2x1 fifthI15(.Y(Y[15]), .I0(result4[15]), .I1(1'b0), .S(S[4]));
+for(p = 16; p < 32; p = p + 1)
+begin
+	MUX1_2x1 fifth(.Y(Y[p]), .I0(result4[p]), .I1(result4[p-16]), .S(S[4]));
+end
+
+//for(q = 0; q < 32; q = q + 1)
+//begin
+//	buf(Y[q], result[q]);
+//end
+
+endgenerate
+
+endmodule
+
+
+//an attempt to make the 4 bit left shifter for fundamental testing
+module SHIFT4_L(Y, D, S);
+
+// output list
+output [7:0] Y;
+// input list
+input [7:0] D;
+input [2:0] S;
+
+wire [7:0] result;
+wire [7:0] prev;
+wire [7:0] res;
+
+genvar i, j, k;
+generate
+MUX1_2x1 inst1(.Y(result[0]), .I0(D[0]), .I1(1'b0), .S(S[0]));
+//MUX1_2x1 inst2(.Y(result[1]), .I0(D[1]), .I1(D[0]), .S(S[0]));
+//MUX1_2x1 inst3(.Y(result[2]), .I0(D[2]), .I1(D[1]), .S(S[0]));
+//MUX1_2x1 inst4(.Y(result[3]), .I0(D[3]), .I1(D[2]), .S(S[0]));
+for(i = 1; i < 8; i = i + 1)
+begin
+	MUX1_2x1 asgard(.Y(result[i]), .I0(D[i]), .I1(D[i-1]), .S(S[0]));
+end
+
+
+MUX1_2x1 inst5(.Y(prev[0]), .I0(result[0]), .I1(1'b0), .S(S[1]));
+MUX1_2x1 inst6(.Y(prev[1]), .I0(result[1]), .I1(1'b0), .S(S[1]));
+//MUX1_2x1 inst7(.Y(Y[2]), .I0(result[2]), .I1(result[0]), .S(S[1]));
+//MUX1_2x1 inst8(.Y(Y[3]), .I0(result[3]), .I1(result[1]), .S(S[1]));
+for(j = 2; j < 8; j = j + 1)
+begin
+	MUX1_2x1 gandon(.Y(prev[j]), .I0(result[j]), .I1(result[j-2]), .S(S[1]));  
+end
+
+
+MUX1_2x1 inst9(.Y(Y[0]), .I0(prev[0]), .I1(1'b0), .S(S[2]));
+MUX1_2x1 inst10(.Y(Y[1]), .I0(prev[1]), .I1(1'b0), .S(S[2]));
+MUX1_2x1 inst11(.Y(Y[2]), .I0(prev[2]), .I1(1'b0), .S(S[2]));
+MUX1_2x1 inst12(.Y(Y[3]), .I0(prev[3]), .I1(1'b0), .S(S[2]));
+for(k = 4; k < 8; k = k + 1)
+begin
+	MUX1_2x1 qase(.Y(Y[k]), .I0(prev[k]), .I1(prev[k-4]), .S(S[2]));
+end
+  
+endgenerate
+
+endmodule
+   
+
+

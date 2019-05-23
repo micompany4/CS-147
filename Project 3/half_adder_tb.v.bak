@@ -1,0 +1,33 @@
+`timescale 1ns/1ps
+
+module half_adder_tb;
+reg A, B;
+wire Y, C;
+integer yui, car;
+
+HALF_ADDER test_ints_1(.Y(Y), .C(C), .A(A), .B(B));
+
+initial 
+begin
+	A = 0; B = 0;
+	yui = Y;
+	car = C;
+	$write("A: 0 B:0 | Y: %d C: %d\n", yui, car);
+
+#5	A = 0; B = 1;
+	yui = Y;
+	car = C;
+	$write("A: 0 B:1 | Y: %d C: %d\n", yui, car);
+
+#5	A = 1; B = 0;
+	yui = Y;
+	car = C;
+	$write("A: 1 B:0 | Y: %d C: %d\n", yui, car);
+
+#5	A = 1; B = 1;
+	yui = Y;
+	car = C;
+	$write("A: 1 B:1 | Y: %d C: %d\n", yui, car);
+	$stop;
+end
+endmodule;

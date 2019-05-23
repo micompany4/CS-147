@@ -1,0 +1,87 @@
+// Name: alu.v
+// Module: ALU
+// Input: OP1[32] - operand 1
+//        OP2[32] - operand 2
+//        OPRN[6] - operation code
+// Output: OUT[32] - output result for the operation
+//
+// Notes: 32 bit combinatorial ALU
+// 
+// Supports the following functions
+//	- Integer add (0x1), sub(0x2), mul(0x3)
+//	- Integer shift_rigth (0x4), shift_left (0x5)
+//	- Bitwise and (0x6), or (0x7), nor (0x8)
+//  - set less than (0x9)
+//
+// Revision History:
+//
+// Version	Date		Who		email			note
+//------------------------------------------------------------------------------------------
+//  1.0     Sep 10, 2014	Kaushik Patra	kpatra@sjsu.edu		Initial creation
+//------------------------------------------------------------------------------------------
+//
+`include "prj_definition.v"
+module ALU(OUT, ZERO, OP1, OP2, OPRN);
+// input list
+input [`DATA_INDEX_LIMIT:0] OP1; // operand 1
+input [`DATA_INDEX_LIMIT:0] OP2; // operand 2
+input [5:0] OPRN; // operation code
+
+// output list
+output [`DATA_INDEX_LIMIT:0] OUT; // result of the operation.
+output ZERO;
+
+// TBD
+//Creates registers for the outputs 
+//reg [`DATA_INDEX_LIMIT:0] OUT;
+//reg ZERO;
+
+//wire [31:0] gg;
+
+//wires to hold outputs of the smaller pieces to the ALU
+wire [31:0] norOut;
+wire [31:0] andOut;
+wire [31:0] orOut;
+wire [31:0] multHI, multLO;
+wire [31:0] shiftOut;
+wire [31:0] addOut, addCO;
+wire [31:0] result, zero;
+wire oprnNot, oprnAnd, oprnOr;
+wire [31:0] dead = 32'b0;		//a dead wire to be used for all the other unused slots in the multiplexer
+
+// TBD - Code for the ALU
+
+//the 32 bit logic gates
+NOR32_2x1 excusive(.Y(norOut), .A(OP1), .B(OP2));
+AND32_2x1 anderson(.Y(andOut), .A(OP1), .B(OP2));
+OR32_2x1 oreo(.Y(orOut), .A(OP1), .B(OP2));
+
+MULT32 multimini(.HI(multHI), .LO(multLO), .A(OP1), .B(OP2));			//signed multiplier
+SHIFT32 shifter(.Y(shiftOut), .D(OP1), .S(OP2), .LnR(OPRN[0]));			//shift register
+
+//generates the correct SnA for the add/sub
+not inst1(oprnNot, OPRN[0]);
+and inst2(oprnAnd, OPRN[3], OPRN[0]);
+or inst3(oprnOr, oprnNot, oprnAnd);
+
+RC_ADD_SUB_32 subway(.Y(addOut), .CO(addCO), .A(OP1), .B(OP2), .SnA(oprnOr));	//adder/subtractor 
+
+
+//the last multiplexer to determine the ALU's output
+MUX32_16x1 final(.Y(result), .I0(dead), .I1(addOut), .I2(addOut), .I3(multLO), .I4(shiftOut), .I5(shiftOut), .I6(andOut), .I7(orOut),
+                     .I8(norOut), .I9({31{0}, addOut[31]}), .I10(dead), .I11(dead), .I12(dead), .I13(dead), .I14(dead), .I15(dead), .S(OPRN[3:0]));
+
+NOR32_2x1 zeth(.Y(zero), .A(result), .B(result));
+
+buf duff(ZERO, zero[0:0]);
+
+genvar i;
+generate
+for(i = 0; i < 32; i = i + 1)
+begin
+	buf buffer(OUT[i], result[i]);
+end
+endgenerate
+
+
+endmodule

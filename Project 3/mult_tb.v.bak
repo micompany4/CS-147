@@ -1,0 +1,27 @@
+`timescale 1ns/1ps
+
+//test the signed multiplier
+module sing_mult_tb;
+reg [31:0] A, B;
+wire [31:0] HI, LO;
+
+MULT32 inst(.HI(HI), .LO(LO), .A(A), .B(B));
+
+initial 
+begin 
+	A = 'b0; B = 'b0;
+#5	$write("A:0 B:0 | HI: %d LO: %d\n", HI, LO);
+#5	A = 'b1; B = 'b0;
+#5	$write("A:1 B:0 | HI %d LO: %d\n", HI, LO);
+#5	A = 'b1; B = 'b1;
+#5	$write("A:1 B:1 | HI: %d LO: %d\n", HI, LO);
+#5	A = 'b10; B = 'b10;
+#5	$write("A:10 B:10 | HI: %d LO: %d\n", HI, LO);
+#5	A = 'hffffffff; B = 'b1;
+#5	$write("A:hffffffff B: 1 | HI: %d LO: %d\n", HI, LO);
+#5
+	$stop;
+
+end
+
+endmodule;
